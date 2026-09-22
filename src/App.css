@@ -1,0 +1,171 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a0f;
+  color: #f0f0f5;
+  min-height: 100vh;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 0 60px; }
+.hero {
+  text-align: center;
+  padding: 70px 24px 50px;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(124,92,255,0.25), transparent 60%),
+    radial-gradient(ellipse at 70% 20%, rgba(255,110,199,0.2), transparent 60%),
+    #0a0a0f;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.hero h1 {
+  font-size: 52px;
+  margin: 0;
+  background: linear-gradient(90deg, #ff6ec7, #7c5cff, #4fd6ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.subtitle { color: #8b8b9e; margin-top: 10px; font-size: 15px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.content { padding: 0 24px; margin-top: -20px; }
+.section {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 24px 28px 28px;
+  margin: 0 auto 28px;
+  max-width: 1000px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.section h2 {
+  margin-top: 0;
+  font-size: 12px;
+  color: #a99bff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+.row { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #f0f0f5;
+  padding: 13px 16px;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 140px;
+  font-size: 14px;
+  transition: border-color 0.2s, background 0.2s;
+}
+input:focus { outline: none; border-color: #7c5cff; background: rgba(255,255,255,0.09); }
+button {
+  background: linear-gradient(135deg, #7c5cff, #ff6ec7);
+  color: white;
+  border: none;
+  padding: 13px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,92,255,0.4); }
+button:active { transform: translateY(0); }
+button:disabled { background: #3a3a45; cursor: not-allowed; transform: none; box-shadow: none; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+.poster-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  background: linear-gradient(135deg, #241a3d, #150f24);
+  cursor: default;
+  transition: transform 0.25s ease;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.poster-card:hover { transform: translateY(-6px) scale(1.02); }
+.poster-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.poster-placeholder-big {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+}
+.poster-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 40%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12px;
+}
+.poster-title { font-weight: 700; font-size: 13px; line-height: 1.3; margin-bottom: 4px; }
+.poster-year { color: #b5b5c9; font-size: 11px; }
+.poster-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.poster-card:hover .poster-actions { opacity: 1; }
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.icon-btn:hover { transform: scale(1.1); box-shadow: none; }
+.icon-btn.danger:hover { background: #ff4d6d; }
+.watched-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, #4fd6ff, #7c5cff);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.error {
+  color: #ff8080;
+  background: rgba(255,80,80,0.1);
+  border: 1px solid rgba(255,80,80,0.3);
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin: 16px auto 0;
+  font-size: 13px;
+  max-width: 1000px;
+  text-align: center;
+}
+.empty { color: #6b6b7e; font-style: italic; padding: 16px 0; text-align: center; }
+
+/* fix: overlay was blocking clicks on the action buttons */
+.poster-overlay { pointer-events: none; z-index: 1; }
+.poster-actions { opacity: 1; z-index: 3; }
+.icon-btn { pointer-events: auto; }
