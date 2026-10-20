@@ -17,12 +17,18 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [recs, setRecs] = useState([])
+  const [recsLoading, setRecsLoading] = useState(false)
+  const [recsMsg, setRecsMsg] = useState('')
+  // Only changes when the set of TMDB movies in the watchlist changes (not on watched toggles)
+  const tmdbKey = movies.map(m => m.tmdb_id).filter(Boolean).join(',')
 
   const logout = () => {
     clearToken()
     localStorage.removeItem(USER_KEY)
     setUser(null)
     setMovies([])
+    setRecs([])
     setSearchResults([])
     setError('')
   }
@@ -52,6 +58,27 @@ export default function App() {
   }
 
   useEffect(() => { if (user) loadMovies() }, [user])
+
+  // Reload recommendations whenever the watchlist's TMDB movies change
+  useEffect(() => {
+    if (!user) return
+    if (!tmdbKey) { setRecs([]); setRecsMsg(''); setRecsLoading(false); return }
+    let cancelled = false  // ignore a slow response if the watchlist changed again meanwhile
+    setRecsLoading(true)
+    ;(async () => {
+      try {
+        const res = await api('/recommendations')
+        if (cancelled) return
+        if (res.ok) { setRecs(res.data.results || []); setRecsMsg('') }
+        else if (res.status !== 401) { setRecs([]); setRecsMsg('Recommendations are unavailable right now.') }
+      } catch {
+        if (!cancelled) { setRecs([]); setRecsMsg('Recommendations are unavailable right now.') }
+      } finally {
+        if (!cancelled) setRecsLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [user, tmdbKey])
 
   const addMovie = async (e) => {
     e.preventDefault()
@@ -220,6 +247,38 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {tmdbKey && (
+          <div className="section">
+            <h2>Recommended for you</h2>
+            {recsLoading && recs.length === 0 && <p className="empty">Finding recommendations…</p>}
+            {recsMsg && <p className="empty">{recsMsg}</p>}
+            {recs.length > 0 && (
+              <div className="grid">
+                {recs.map(m => (
+                  <div
+                    className="poster-card"
+                    key={m.tmdb_id}
+                    title={m.because?.length ? `Because you added ${m.because.join(', ')}` : undefined}
+                  >
+                    {m.poster_path ? (
+                      <img src={m.poster_path} alt={m.title} />
+                    ) : (
+                      <div className="poster-placeholder-big">🎥</div>
+                    )}
+                    <div className="poster-actions">
+                      <button className="icon-btn" title="Add to watchlist" onClick={() => importMovie(m.tmdb_id)}>+</button>
+                    </div>
+                    <div className="poster-overlay">
+                      <div className="poster-title">{m.title}</div>
+                      {m.year && m.year !== '0000' && <div className="poster-year">{m.year}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
