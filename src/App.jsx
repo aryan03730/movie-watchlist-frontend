@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
+import AuthForm from './AuthForm'
+import { api, getToken, clearToken, setUnauthorizedHandler } from './api'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050'
+const USER_KEY = 'watchlist_user'
+
+function readSavedUser() {
+  try { return JSON.parse(localStorage.getItem(USER_KEY)) } catch { return null }
+}
 
 export default function App() {
+  const [user, setUser] = useState(() => (getToken() ? readSavedUser() : null))
   const [movies, setMovies] = useState([])
   const [title, setTitle] = useState('')
   const [year, setYear] = useState('')
@@ -11,49 +18,81 @@ export default function App() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const logout = () => {
+    clearToken()
+    localStorage.removeItem(USER_KEY)
+    setUser(null)
+    setMovies([])
+    setSearchResults([])
+    setError('')
+  }
+
+  // If the API ever answers 401 to a request that carried a token, log out
+  useEffect(() => { setUnauthorizedHandler(logout) }, [])
+
+  const handleAuth = (u) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(u))
+    setUser(u)
+  }
+
+  // 401s are handled by logout, so don't show an error for them
+  const fail = (res, fallback) => {
+    if (res.status === 401) return
+    setError(res.data?.error || fallback)
+  }
+
   const loadMovies = async () => {
     try {
-      const res = await fetch(`${API_URL}/movies`)
-      const data = await res.json()
-      setMovies(data)
-    } catch (e) {
+      const res = await api('/movies')
+      if (res.ok) setMovies(res.data)
+      else fail(res, 'Could not load your watchlist')
+    } catch {
       setError('Could not reach backend')
     }
   }
 
-  useEffect(() => { loadMovies() }, [])
+  useEffect(() => { if (user) loadMovies() }, [user])
 
   const addMovie = async (e) => {
     e.preventDefault()
     setError('')
     if (!title.trim()) return
     try {
-      const res = await fetch(`${API_URL}/movies`, {
+      const res = await api('/movies', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, year: year ? parseInt(year) : null })
+        body: JSON.stringify({ title, year: year ? parseInt(year, 10) : null }),
       })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Failed to add movie'); return }
+      if (!res.ok) { fail(res, 'Failed to add movie'); return }
       setTitle(''); setYear('')
       loadMovies()
-    } catch (e) {
+    } catch {
       setError('Could not reach backend')
     }
   }
 
   const toggleWatched = async (movie) => {
-    await fetch(`${API_URL}/movies/${movie.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ watched: !movie.watched })
-    })
-    loadMovies()
+    setError('')
+    try {
+      const res = await api(`/movies/${movie.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ watched: !movie.watched }),
+      })
+      if (!res.ok) { fail(res, 'Could not update movie'); return }
+      loadMovies()
+    } catch {
+      setError('Could not reach backend')
+    }
   }
 
   const deleteMovie = async (id) => {
-    await fetch(`${API_URL}/movies/${id}`, { method: 'DELETE' })
-    loadMovies()
+    setError('')
+    try {
+      const res = await api(`/movies/${id}`, { method: 'DELETE' })
+      if (!res.ok) { fail(res, 'Could not delete movie'); return }
+      loadMovies()
+    } catch {
+      setError('Could not reach backend')
+    }
   }
 
   const searchTmdb = async (e) => {
@@ -62,11 +101,10 @@ export default function App() {
     if (!searchQuery.trim()) return
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/external/search?q=${encodeURIComponent(searchQuery)}`)
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Search failed'); setSearchResults([]); return }
-      setSearchResults(data.results || [])
-    } catch (e) {
+      const res = await api(`/external/search?q=${encodeURIComponent(searchQuery)}`)
+      if (!res.ok) { fail(res, 'Search failed'); setSearchResults([]); return }
+      setSearchResults(res.data.results || [])
+    } catch {
       setError('Could not reach backend / TMDB')
     } finally {
       setLoading(false)
@@ -75,31 +113,53 @@ export default function App() {
 
   const importMovie = async (tmdbId) => {
     setError('')
-    const res = await fetch(`${API_URL}/movies/import`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: tmdbId })
-    })
-    const data = await res.json()
-    if (!res.ok) { setError(data.error || 'Import failed'); return }
-    loadMovies()
+    try {
+      const res = await api('/movies/import', {
+        method: 'POST',
+        body: JSON.stringify({ tmdb_id: tmdbId }),
+      })
+      if (!res.ok) { fail(res, 'Import failed'); return }
+      loadMovies()
+    } catch {
+      setError('Could not reach backend')
+    }
+  }
+
+  const hero = (
+    <div className="hero">
+      <h1>🎬 Movie Watchlist</h1>
+      <p className="subtitle">Discover movies, search TMDB, and keep track of what you want to watch.</p>
+    </div>
+  )
+
+  if (!user) {
+    return (
+      <div className="container">
+        {hero}
+        <div className="content">
+          <AuthForm onAuth={handleAuth} />
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="container">
-      <div className="hero">
-        <h1>🎬 Movie Watchlist</h1>
-        <p className="subtitle">Discover movies, search TMDB, and keep track of what you want to watch.</p>
-      </div>
+      {hero}
 
       <div className="content">
+        <div className="userbar">
+          <span>{user.email}</span>
+          <button onClick={logout}>Log out</button>
+        </div>
+
         {error && <p className="error">{error}</p>}
 
         <div className="section">
           <h2>Add a movie manually</h2>
           <form className="row" onSubmit={addMovie}>
             <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
-            <input placeholder="Year" value={year} onChange={e => setYear(e.target.value)} style={{maxWidth: 100}} />
+            <input placeholder="Year" value={year} onChange={e => setYear(e.target.value)} style={{ maxWidth: 100 }} />
             <button type="submit">Add</button>
           </form>
         </div>
@@ -124,7 +184,7 @@ export default function App() {
                   </div>
                   <div className="poster-overlay">
                     <div className="poster-title">{m.title}</div>
-                    <div className="poster-year">{m.year}</div>
+                    {m.year && m.year !== '0000' && <div className="poster-year">{m.year}</div>}
                   </div>
                 </div>
               ))}
@@ -153,7 +213,7 @@ export default function App() {
                   </div>
                   <div className="poster-overlay">
                     <div className="poster-title">{m.title}</div>
-                    {m.year && <div className="poster-year">{m.year}</div>}
+                    {m.year ? <div className="poster-year">{m.year}</div> : null}
                   </div>
                 </div>
               ))}

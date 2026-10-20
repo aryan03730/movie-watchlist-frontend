@@ -169,3 +169,11 @@ button:disabled { background: #3a3a45; cursor: not-allowed; transform: none; box
 .poster-overlay { pointer-events: none; z-index: 1; }
 .poster-actions { opacity: 1; z-index: 3; }
 .icon-btn { pointer-events: auto; }
+/* auth screen + user bar */
+.auth-wrap { max-width: 420px; margin: 0 auto; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-switch { margin-top: 16px; font-size: 13px; color: #8b8b9e; text-align: center; }
+.link-btn { background: none; border: none; color: #a99bff; padding: 0; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: none; }
+.link-btn:hover { transform: none; box-shadow: none; text-decoration: underline; }
+.userbar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; max-width: 1000px; margin: 0 auto 16px; font-size: 13px; color: #8b8b9e; }
+.userbar button { padding: 8px 14px; font-size: 12px; }
